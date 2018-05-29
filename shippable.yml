@@ -1,0 +1,96 @@
+resources:
+# Automation scripts repo
+  - name: prov_gcp_gke_repo
+    type: gitRepo
+    integration: "drship_github"
+    versionTemplate:
+      sourceName: "devops-recipes/prov_gcp_gke_gcloud"
+      branch: master
+
+# AWS credentials
+  - name: prov_gcp_gke_creds
+    type: cliConfig
+    integration: "drship_gcp"
+    versionTemplate:
+      region: "us-east1"
+
+# Output of provisioning
+# GKE cluster info
+  - name: gcp_gke_cluster
+    type: cluster
+    integration: "drship_gcp"
+    versionTemplate:
+      sourceName: "tbd"
+      region: "us-west1-a"
+
+jobs:
+# Provision GCP GKE with gcloud
+  - name: prov_gcp_gke_gcloud
+    type: runSh
+    steps:
+      - IN: prov_gcp_gke_repo
+        switch: off
+      - IN: prov_gcp_gke_creds
+        switch: off
+      - TASK:
+          name: prov_cluster
+          runtime:
+            options:
+              env:
+                - cluster_name: "test-cluster"
+                - cluster_zone: "us-east1-d"
+                - machine_type: "n1-standard-1"
+                - machine_count: 3
+                - volume_size: 30
+          script:
+            - |
+                # check if the cluster already exists on GKE
+                response=$(gcloud container clusters describe $cluster_name --zone $cluster_zone || echo "ClusterNotFound")
+                if [[ $response = "ClusterNotFound" ]]
+                  then
+                    echo "cluster not found, creating cluster"
+                    gcloud container clusters create $cluster_name --num-nodes=$machine_count --machine-type=$machine_type --disk-size=$volume_size --zone=$cluster_zone
+                  else
+                    echo "cluster already exists, skipping creating cluster"
+                fi
+      - OUT: gcp_gke_cluster
+        overwrite: true
+    on_success:
+      script:
+        - shipctl put_resource_state_multi gcp_gke_cluster "versionName=$cluster_name" "sourceName=$cluster_name)" "region=$cluster_zone)"
+    flags:
+      - gcp_gke
+      - gke
+      - gcloud
+
+## Terminate GCP GCE with Ansible
+#  - name: term_gcp_gce_ans
+#    type: runSh
+#    steps:
+#      - IN: gcp_gce_repo
+#        switch: off
+#      - IN: gcp_gce_creds
+#        switch: off
+#      - IN: gcp_gce_info
+#        switch: off
+#      - TASK:
+#          name: term_inst
+#          runtime:
+#            options:
+#              env:
+#                - gce_zone: "us-east1-d"
+#                - gce_name: "dev"
+#                - gce_tag_Role: "demo-machines"
+#                - GCE_PROJECT: "devops-recipes"
+#                - GCE_EMAIL: "dr-gke@devops-recipes.iam.gserviceaccount.com"
+#                - GCE_CREDENTIALS_FILE_PATH: "gcp_key.json"
+#          script:
+#            - pip install apache-libcloud backports.ssl_match_hostname
+#            - pushd $(shipctl get_resource_state "gcp_gce_repo")/ansible
+#            - echo $(shipctl get_integration_resource_field gcp_gce_creds JSON_key) > $GCE_CREDENTIALS_FILE_PATH
+#            - shipctl replace variables.yml inventory/gce.ini
+#            - ansible-playbook -v gce_term_playbook.yml
+#    flags:
+#      - gcp_gke
+#      - gke
+#      - gcloud
