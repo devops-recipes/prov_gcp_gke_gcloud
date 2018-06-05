@@ -57,7 +57,7 @@ jobs:
         overwrite: true
     on_success:
       script:
-        - shipctl put_resource_state_multi gcp_gke_cluster "versionName=$cluster_name" "sourceName=$cluster_name)" "region=$cluster_zone)"
+        - shipctl put_resource_state_multi gcp_gke_cluster "versionName=$cluster_name" "sourceName=$cluster_name" "region=$cluster_zone"
     flags:
       - gcp_gke
       - gke
