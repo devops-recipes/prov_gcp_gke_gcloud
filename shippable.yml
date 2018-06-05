@@ -25,7 +25,7 @@ resources:
 
 jobs:
 # Provision GCP GKE with gcloud
-  - name: prov_gcp_gke_gcloud
+  - name: prov_gcp_gke
     type: runSh
     steps:
       - IN: prov_gcp_gke_repo
