@@ -2,7 +2,7 @@ resources:
 # GCP credentials
   - name: prov_gcp_gke_creds
     type: cliConfig
-    integration: "drship_gcp"
+    integration: "dr_gcp"
     versionTemplate:
       region: "us-east1"
 
@@ -10,10 +10,10 @@ resources:
 # GKE cluster info
   - name: gcp_gke_cluster
     type: cluster
-    integration: "drship_gcp"
+    integration: "dr_gcp"
     versionTemplate:
       sourceName: "tbd"
-      region: "us-west1-a"
+      region: "us-east1-d"
 
 jobs:
 # Provision GCP GKE with gcloud
